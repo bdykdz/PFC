@@ -1,0 +1,30 @@
+# Cloudflare Tunnel Configuration for People Finder
+# Add this to your existing tunnel configuration
+
+tunnel: your-tunnel-id
+credentials-file: /path/to/your-tunnel-credentials.json
+
+ingress:
+  # People Finder Application
+  - hostname: people.yourdomain.com
+    service: http://localhost:3020
+    originRequest:
+      httpHostHeader: people.yourdomain.com
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      
+  # Optional: Direct access to MinIO console (for admin)
+  - hostname: files.yourdomain.com
+    service: http://localhost:3021  # If you expose MinIO console
+    originRequest:
+      httpHostHeader: files.yourdomain.com
+      
+  # Your existing app configurations...
+  # - hostname: app1.yourdomain.com
+  #   service: http://localhost:3000
+  
+  # - hostname: app2.yourdomain.com  
+  #   service: http://localhost:4000
+  
+  # Catch-all rule (keep this last)
+  - service: http_status:404

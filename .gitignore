@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files (keep examples)
+.env
+.env*.local
+.env.production
+.env.cloudflare
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Database
+/database/*.sql
+/data
+*.db
+*.db-journal
+
+# Docker
+docker-compose.override.yml
+
+# Secrets and certificates
+/secrets/
+/nginx/certs/
+*.key
+*.crt
+
+# Logs
+/logs/
+*.log
+
+# Backup files
+*.sql
+*.tar.gz
+backup_*
+
+# Uploads
+/uploads
+/public/uploads
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Prisma
+/prisma/migrations/
+
+# MinIO data
+/minio-data/
+
+# Temporary files
+/tmp/
+/temp/

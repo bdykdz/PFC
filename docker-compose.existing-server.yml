@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: people-finder-postgres
+    environment:
+      POSTGRES_DB: people_finder
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - people_finder_postgres_data:/var/lib/postgresql/data
+    networks:
+      - people-finder-backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: people-finder-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - people_finder_minio_data:/data
+    networks:
+      - people-finder-backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  app:
+    build: .
+    image: people-finder-app:latest
+    container_name: people-finder-app
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@people-finder-postgres:5432/people_finder
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AZURE_AD_CLIENT_ID: ${AZURE_AD_CLIENT_ID}
+      AZURE_AD_CLIENT_SECRET: ${AZURE_AD_CLIENT_SECRET}
+      AZURE_AD_TENANT_ID: ${AZURE_AD_TENANT_ID}
+      MINIO_ENDPOINT: http://people-finder-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - people-finder-backend
+      - proxy  # Connect to your existing proxy network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      # For Traefik (if you're using it)
+      - "traefik.enable=true"
+      - "traefik.http.routers.people-finder.rule=Host(`people.yourdomain.com`)"
+      - "traefik.http.routers.people-finder.tls.certresolver=letsencrypt"
+      - "traefik.http.services.people-finder.loadbalancer.server.port=3000"
+      
+      # For nginx-proxy (if you're using it)
+      - "VIRTUAL_HOST=people.yourdomain.com"
+      - "LETSENCRYPT_HOST=people.yourdomain.com"
+      - "LETSENCRYPT_EMAIL=your-email@domain.com"
+
+volumes:
+  people_finder_postgres_data:
+    name: people_finder_postgres_data
+  people_finder_minio_data:
+    name: people_finder_minio_data
+
+networks:
+  people-finder-backend:
+    name: people-finder-backend
+    driver: bridge
+  proxy:
+    external: true  # Connect to your existing proxy network

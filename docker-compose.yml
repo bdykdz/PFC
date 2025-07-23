@@ -1,0 +1,55 @@
+# Default docker-compose for local development
+# For production deployment, use: docker-compose.cloudflare.yml
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: people-finder-dev-postgres
+    environment:
+      POSTGRES_DB: people_finder
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - people-finder
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: people-finder-dev-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: devpassword123
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - people-finder
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  postgres_data:
+    name: people_finder_dev_postgres
+  minio_data:
+    name: people_finder_dev_minio
+
+networks:
+  people-finder:
+    name: people-finder-dev
+    driver: bridge

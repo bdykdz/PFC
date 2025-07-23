@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose exec postgres psql:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(npm install:*)",
+      "Bash(mv:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker build:*)",
+      "Bash(chmod:*)",
+      "Bash(docker cp:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker system prune:*)",
+      "Bash(rm:*)",
+      "Bash(./scripts/docker-migrate.sh:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(touch:*)",
+      "Bash(mkdir:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
