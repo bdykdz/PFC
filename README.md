@@ -137,7 +137,3 @@ docker-compose -f docker-compose.cloudflare.yml logs -f app
 # Restart if needed
 docker-compose -f docker-compose.cloudflare.yml restart
 ```
-
----
-
-**Ready for GitHub! Just clone and deploy with `./deploy-cloudflare.sh` 🚀**
