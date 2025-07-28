@@ -515,19 +515,19 @@ export default function AddPersonClient() {
               <div key={contract.id} className="p-4 border rounded space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t('form.contractName')}</Label>
+                    <Label>{t('addPerson.contractName')}</Label>
                     <Input
                       value={contract.name}
                       onChange={(e) => updateContract(contract.id, 'name', e.target.value)}
-                      placeholder={t('form.contractNamePlaceholder')}
+                      placeholder={t('addPerson.contractNamePlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.contractNumber')}</Label>
+                    <Label>{t('addPerson.contractNumber')}</Label>
                     <Input
                       value={contract.contractNumber}
                       onChange={(e) => updateContract(contract.id, 'contractNumber', e.target.value)}
-                      placeholder={t('form.contractNumberPlaceholder')}
+                      placeholder={t('addPerson.contractNumberPlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
@@ -539,27 +539,27 @@ export default function AddPersonClient() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.location')}</Label>
+                    <Label>{t('addPerson.location')}</Label>
                     <Input
                       value={contract.location}
                       onChange={(e) => updateContract(contract.id, 'location', e.target.value)}
-                      placeholder={t('form.location')}
+                      placeholder={t('addPerson.location')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.beneficiary')}</Label>
+                    <Label>{t('addPerson.beneficiary')}</Label>
                     <Input
                       value={contract.beneficiary}
                       onChange={(e) => updateContract(contract.id, 'beneficiary', e.target.value)}
-                      placeholder={t('form.beneficiary')}
+                      placeholder={t('addPerson.beneficiary')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.position')}</Label>
+                    <Label>{t('addPerson.position')}</Label>
                     <Input
                       value={contract.position}
                       onChange={(e) => updateContract(contract.id, 'position', e.target.value)}
-                      placeholder={t('form.position')}
+                      placeholder={t('addPerson.position')}
                     />
                   </div>
                   <div className="space-y-2">
@@ -613,7 +613,7 @@ export default function AddPersonClient() {
                       size="sm"
                       onClick={() => contractFileRefs.current[contract.id]?.click()}
                     >
-                      <Upload className="h-4 w-4 mr-2" /> {t('form.uploadDocument')}
+                      <Upload className="h-4 w-4 mr-2" /> {t('common.uploadDocument')}
                     </Button>
                   </div>
                 </div>
@@ -625,7 +625,7 @@ export default function AddPersonClient() {
                   onClick={() => removeContract(contract.id)}
                   className="mt-4"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" /> {t('form.deleteContract')}
+                  <Trash2 className="h-4 w-4 mr-2" /> {t('addPerson.deleteContract')}
                 </Button>
               </div>
             ))}
@@ -664,23 +664,23 @@ export default function AddPersonClient() {
               <div key={diploma.id} className="p-4 border rounded space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t('form.diplomaName')}</Label>
+                    <Label>{t('addPerson.diplomaName')}</Label>
                     <Input
                       value={diploma.name}
                       onChange={(e) => updateDiploma(diploma.id, 'name', e.target.value)}
-                      placeholder={t('form.diplomaNamePlaceholder')}
+                      placeholder={t('addPerson.diplomaName')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.issuer')}</Label>
+                    <Label>{t('addPerson.issuer')}</Label>
                     <Input
                       value={diploma.issuer}
                       onChange={(e) => updateDiploma(diploma.id, 'issuer', e.target.value)}
-                      placeholder={t('form.issuerPlaceholder')}
+                      placeholder={t('addPerson.issuer')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.issueDate')}</Label>
+                    <Label>{t('addPerson.issueDate')}</Label>
                     <Input
                       type="date"
                       value={diploma.issueDate}
@@ -688,7 +688,7 @@ export default function AddPersonClient() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('form.expiryDate')} ({t('common.optional')})</Label>
+                    <Label>{t('addPerson.expiryDate')} ({t('common.optional')})</Label>
                     <Input
                       type="date"
                       value={diploma.expiryDate || ''}
@@ -730,7 +730,7 @@ export default function AddPersonClient() {
                       size="sm"
                       onClick={() => diplomaFileRefs.current[diploma.id]?.click()}
                     >
-                      <Upload className="h-4 w-4 mr-2" /> {t('form.uploadDocument')}
+                      <Upload className="h-4 w-4 mr-2" /> {t('common.uploadDocument')}
                     </Button>
                   </div>
                 </div>
@@ -742,7 +742,7 @@ export default function AddPersonClient() {
                   onClick={() => removeDiploma(diploma.id)}
                   className="mt-4"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" /> {t('form.deleteDiploma')}
+                  <Trash2 className="h-4 w-4 mr-2" /> {t('addPerson.deleteDiploma')}
                 </Button>
               </div>
             ))}
@@ -899,7 +899,7 @@ export default function AddPersonClient() {
                   size="sm"
                   onClick={() => generalDocumentRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4 mr-2" /> Upload Document
+                  <Upload className="h-4 w-4 mr-2" /> {t('common.uploadDocument')}
                 </Button>
               </div>
             </div>

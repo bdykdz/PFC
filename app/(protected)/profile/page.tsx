@@ -16,5 +16,5 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  return <ProfileClient />
+  return <ProfileClient session={session} />
 }

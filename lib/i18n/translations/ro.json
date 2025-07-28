@@ -8,7 +8,12 @@
     "add": "Adaugă",
     "loading": "Se încarcă...",
     "error": "Eroare",
-    "success": "Succes"
+    "success": "Succes",
+    "description": "Descriere",
+    "optional": "opțional",
+    "skill": "Competență",
+    "level": "Nivel",
+    "uploadDocument": "Încarcă Document"
   },
   "navigation": {
     "people": "Director Persoane",
@@ -77,7 +82,12 @@
     "endDate": "Data Sfârșit",
     "skillName": "Nume competență",
     "level": "Nivel",
-    "selectLevel": "Selectează nivel"
+    "selectLevel": "Selectează nivel",
+    "skill": "Competență",
+    "skillNamePlaceholder": "Introduceți numele competenței",
+    "acceptTerms": "Am introdus toate datele necesare.",
+    "addPerson": "Adaugă Persoană",
+    "addingPerson": "Se adaugă persoana"
   },
   "auth": {
     "welcomeTitle": "Bun venit la People Finder",
@@ -97,11 +107,13 @@
     "addDiploma": "Adaugă Diplomă",
     "addDocument": "Adaugă Document",
     "contractName": "Nume contract",
+    "contractNamePlaceholder": "Introduceți numele contractului",
     "description": "Descriere",
     "location": "Locație",
     "beneficiary": "Beneficiar",
     "position": "Poziție",
     "contractNumber": "Număr contract",
+    "contractNumberPlaceholder": "Introduceți numărul contractului",
     "diplomaName": "Nume diplomă",
     "issuer": "Emitent",
     "issueDate": "Data emiterii",
@@ -110,6 +122,7 @@
     "company": "Companie",
     "department": "Departament",
     "expertise": "Expertiză",
+    "expertisePlaceholder": "Descrieți expertiza...",
     "observationsPlaceholder": "Adaugă observații (ex: Excel avansat, Disponibilitate călătorii, Disponibilitate relocare)",
     "termsAccepted": "Am introdus toate datele necesare.",
     "addingPerson": "Se adaugă persoana...",
@@ -120,7 +133,8 @@
     "deleteSkill": "Șterge Competență",
     "uploadDocuments": "Încarcă documente contract",
     "documentUploadLabel": "Încarcă documente asociate pentru această persoană",
-    "documentName": "Nume document"
+    "documentName": "Nume document",
+    "uploadRelatedDocuments": "Încarcă documente asociate pentru această persoană"
   },
   "admin": {
     "importTitle": "Importă Utilizatori din Azure AD",
@@ -332,6 +346,8 @@
     "enterValue": "Introduceți valoarea...",
     "enterNameOrEmail": "Introduceți nume sau email...",
     "enterSkills": "ex: React, Management...",
+    "enterSkillsCommaSeparated": "Introduceți competențe separate prin virgulă",
+    "separateWithCommas": "Separați valorile multiple cu virgulă",
     "noSavedSearches": "Nicio căutare salvată încă. Creați și salvați o căutare din Constructorul de Interogări.",
     "conditions": "condiții",
     "load": "Încarcă",
@@ -340,6 +356,11 @@
     "tryAdjustingQuery": "Încercați să ajustați condițiile interogării",
     "contracts": "contracte",
     "active": "active",
-    "enterSearchName": "Introduceți numele pentru această căutare:"
+    "enterSearchName": "Introduceți numele pentru această căutare:",
+    "numberOfActiveContracts": "Număr de contracte active",
+    "searchSaved": "Căutare salvată cu succes",
+    "searchDeleted": "Căutare ștearsă cu succes",
+    "failedToSaveSearch": "Eroare la salvarea căutării",
+    "failedToDeleteSearch": "Eroare la ștergerea căutării"
   }
 }

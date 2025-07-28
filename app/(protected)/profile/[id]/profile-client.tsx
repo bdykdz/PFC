@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button'
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ChevronLeft, ChevronRight, Edit, Download, Calendar, MapPin, Building2, User, Phone, Mail, Briefcase, GraduationCap, Brain } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Download, Calendar, MapPin, Building2, User, Phone, Mail, Briefcase, GraduationCap, Brain, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -152,8 +152,12 @@ export default function ProfileClient({
   }
 
   const handleDownload = async (fileUrl: string) => {
-    // In production, this would download from MinIO
-    window.open(fileUrl, '_blank')
+    try {
+      // Use direct download endpoint
+      window.open(`/api/documents/${fileUrl}`, '_blank')
+    } catch (error) {
+      console.error('Error downloading file:', error)
+    }
   }
 
   const getInitials = (name: string) => {
@@ -514,6 +518,37 @@ export default function ProfileClient({
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap">{user.observations}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* General Documents */}
+      {documents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.documents')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {documents.map(doc => (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{doc.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({format(new Date(doc.uploadedAt), 'dd/MM/yyyy')})
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDownload(doc.fileUrl)}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

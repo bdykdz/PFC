@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useI18n } from '@/lib/i18n/context'
+import { Session } from 'next-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -58,8 +58,11 @@ interface UserProfile {
   }
 }
 
-export function ProfileClient() {
-  const { data: session } = useSession()
+interface ProfileClientProps {
+  session: Session
+}
+
+export function ProfileClient({ session }: ProfileClientProps) {
   const { t } = useI18n()
   const { toast } = useToast()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -68,10 +71,8 @@ export function ProfileClient() {
   const [editedName, setEditedName] = useState('')
 
   useEffect(() => {
-    if (session?.user) {
-      loadProfile()
-    }
-  }, [session])
+    loadProfile()
+  }, [])
 
   const loadProfile = async () => {
     try {

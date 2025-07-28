@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Plus, Trash2, Upload, Save, Loader2, Download } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
+import { useI18n } from '@/lib/i18n/context'
 
 interface Document {
   id: string;
@@ -83,6 +84,7 @@ interface EditProfileClientProps {
   initialContracts: Contract[];
   initialDiplomas: Diploma[];
   initialSkills: Skill[];
+  initialDocuments: Document[];
 }
 
 export default function EditProfileClient({
@@ -90,10 +92,12 @@ export default function EditProfileClient({
   initialUser,
   initialContracts,
   initialDiplomas,
-  initialSkills
+  initialSkills,
+  initialDocuments
 }: EditProfileClientProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -119,9 +123,11 @@ export default function EditProfileClient({
   const [contracts, setContracts] = useState<Contract[]>(initialContracts)
   const [diplomas, setDiplomas] = useState<Diploma[]>(initialDiplomas)
   const [skills, setSkills] = useState<Skill[]>(initialSkills)
+  const [generalDocuments, setGeneralDocuments] = useState<Document[]>(initialDocuments)
   const [skillsToDelete, setSkillsToDelete] = useState<string[]>([])
   const [contractsToDelete, setContractsToDelete] = useState<string[]>([])
   const [diplomasToDelete, setDiplomasToDelete] = useState<string[]>([])
+  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>([])
   const [experienceByPosition, setExperienceByPosition] = useState<{[key: string]: number}>({})
 
   // Experience calculation
@@ -305,26 +311,57 @@ export default function EditProfileClient({
     }
   };
 
+  // General documents management
+  const addGeneralDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const newDocument: Document = {
+      id: `new-${Date.now()}`,
+      name: file.name,
+      file: file
+    };
+    
+    setGeneralDocuments(prev => [...prev, newDocument]);
+    
+    // Reset the input
+    e.target.value = '';
+  };
+
+  const removeGeneralDocument = (docId: string) => {
+    const doc = generalDocuments.find(d => d.id === docId);
+    if (doc && !doc.id.startsWith('new-')) {
+      // Existing document - add to delete list
+      setDocumentsToDelete(prev => [...prev, docId]);
+    }
+    setGeneralDocuments(prev => prev.filter(doc => doc.id !== docId));
+  };
+
   // Save all changes
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setSaving(true);
 
     try {
       const formDataToSend = new FormData();
       
-      // User data
-      formDataToSend.append('userData', JSON.stringify({
+      // Prepare user data
+      const userData = {
         ...formData,
         general_experience: generalExperience ? new Date(generalExperience) : null,
-      }));
+      };
+      
+      // User data
+      formDataToSend.append('userData', JSON.stringify(userData));
 
       // Items to delete
-      formDataToSend.append('deleteData', JSON.stringify({
+      const deleteData = {
         skills: skillsToDelete,
         contracts: contractsToDelete,
-        diplomas: diplomasToDelete
-      }));
+        diplomas: diplomasToDelete,
+        documents: documentsToDelete
+      };
+      formDataToSend.append('deleteData', JSON.stringify(deleteData));
 
       // Contracts data
       const contractsData = contracts.map(contract => ({
@@ -376,13 +413,40 @@ export default function EditProfileClient({
         });
       });
 
-      const response = await fetch(`/api/users/${userId}`, {
+      // General documents data
+      const generalDocsData = generalDocuments
+        .filter(doc => doc.id.startsWith('new-'))
+        .map(doc => ({
+          name: doc.name
+        }));
+      formDataToSend.append('generalDocuments', JSON.stringify(generalDocsData));
+
+      // Add general document files
+      generalDocuments.forEach((doc, docIndex) => {
+        if (doc.file) {
+          formDataToSend.append(`general_doc_${docIndex}`, doc.file);
+        }
+      });
+
+      // Debug log
+      console.log('Sending data:', {
+        userData,
+        contracts: contractsData,
+        diplomas: diplomasData,
+        skills: skillsData,
+        generalDocuments: generalDocsData,
+        deleteData
+      });
+
+      const response = await fetch(`/api/employees/${userId}`, {
         method: 'PUT',
         body: formDataToSend,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        console.error('Update failed:', errorData);
+        throw new Error(errorData.error || 'Failed to update profile');
       }
 
       toast({
@@ -445,12 +509,12 @@ export default function EditProfileClient({
         {/* Personal Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>{t('addPerson.personalInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">{t('form.fullName')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -459,7 +523,7 @@ export default function EditProfileClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('form.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -469,7 +533,7 @@ export default function EditProfileClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t('form.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -477,7 +541,7 @@ export default function EditProfileClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contract-type">Contract Type</Label>
+                <Label htmlFor="contract-type">{t('addPerson.contractType')}</Label>
                 <Select
                   value={formData.contractType}
                   onValueChange={(value) => setFormData({...formData, contractType: value})}
@@ -493,7 +557,7 @@ export default function EditProfileClient({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+                <Label htmlFor="company">{t('addPerson.company')}</Label>
                 <Input
                   id="company"
                   value={formData.company}
@@ -501,7 +565,7 @@ export default function EditProfileClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="department">{t('addPerson.department')}</Label>
                 <Input
                   id="department"
                   value={formData.department}
@@ -510,12 +574,12 @@ export default function EditProfileClient({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expertise">Expertise</Label>
+              <Label htmlFor="expertise">{t('addPerson.expertise')}</Label>
               <Textarea
                 id="expertise"
                 value={formData.expertise}
                 onChange={(e) => setFormData({...formData, expertise: e.target.value})}
-                placeholder="Describe expertise..."
+                placeholder={t('addPerson.expertisePlaceholder')}
               />
             </div>
           </CardContent>
@@ -524,11 +588,11 @@ export default function EditProfileClient({
         {/* Experience */}
         <Card>
           <CardHeader>
-            <CardTitle>Experience</CardTitle>
+            <CardTitle>{t('addPerson.experience')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="general-experience">General Experience (Start Date)</Label>
+              <Label htmlFor="general-experience">{t('addPerson.generalExperience')} ({t('form.startDate')})</Label>
               <Input
                 id="general-experience"
                 type="date"
@@ -543,9 +607,9 @@ export default function EditProfileClient({
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Contracts</CardTitle>
+              <CardTitle>{t('addPerson.contracts')}</CardTitle>
               <Button type="button" variant="outline" size="sm" onClick={addContract}>
-                <Plus className="h-4 w-4 mr-2" /> Add Contract
+                <Plus className="h-4 w-4 mr-2" /> {t('addPerson.addContract')}
               </Button>
             </div>
           </CardHeader>
@@ -554,15 +618,15 @@ export default function EditProfileClient({
               <div key={contract.id} className="p-4 border rounded space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Contract Name</Label>
+                    <Label>{t('addPerson.contractName')}</Label>
                     <Input
                       value={contract.name}
                       onChange={(e) => updateContract(contract.id, 'name', e.target.value)}
-                      placeholder="Contract name"
+                      placeholder={t('addPerson.contractNamePlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Contract Number</Label>
+                    <Label>{t('addPerson.contractNumber')}</Label>
                     <Input
                       value={contract.contractNumber || ''}
                       onChange={(e) => updateContract(contract.id, 'contractNumber', e.target.value)}
@@ -570,7 +634,7 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t('common.description')}</Label>
                     <Input
                       value={contract.description || ''}
                       onChange={(e) => updateContract(contract.id, 'description', e.target.value)}
@@ -578,15 +642,15 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Location</Label>
+                    <Label>{t('addPerson.location')}</Label>
                     <Input
                       value={contract.location || ''}
                       onChange={(e) => updateContract(contract.id, 'location', e.target.value)}
-                      placeholder="Location"
+                      placeholder={t('addPerson.location')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Beneficiary</Label>
+                    <Label>{t('addPerson.beneficiary')}</Label>
                     <Input
                       value={contract.beneficiary || ''}
                       onChange={(e) => updateContract(contract.id, 'beneficiary', e.target.value)}
@@ -594,15 +658,15 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Position</Label>
+                    <Label>{t('addPerson.position')}</Label>
                     <Input
                       value={contract.position || ''}
                       onChange={(e) => updateContract(contract.id, 'position', e.target.value)}
-                      placeholder="Position"
+                      placeholder={t('addPerson.position')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Start Date</Label>
+                    <Label>{t('form.startDate')}</Label>
                     <Input
                       type="date"
                       value={formatDateForInput(contract.startDate)}
@@ -610,7 +674,7 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>End Date</Label>
+                    <Label>{t('form.endDate')}</Label>
                     <Input
                       type="date"
                       value={formatDateForInput(contract.endDate)}
@@ -621,7 +685,7 @@ export default function EditProfileClient({
 
                 {/* Contract Documents */}
                 <div className="mt-4 space-y-2">
-                  <Label>Documents</Label>
+                  <Label>{t('addPerson.documents')}</Label>
                   {contract.documents.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded">
                       <span className="text-sm">{doc.name}</span>
@@ -701,9 +765,9 @@ export default function EditProfileClient({
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Diplomas & Certifications</CardTitle>
+              <CardTitle>{t('addPerson.diplomas')}</CardTitle>
               <Button type="button" variant="outline" size="sm" onClick={addDiploma}>
-                <Plus className="h-4 w-4 mr-2" /> Add Diploma
+                <Plus className="h-4 w-4 mr-2" /> {t('addPerson.addDiploma')}
               </Button>
             </div>
           </CardHeader>
@@ -712,7 +776,7 @@ export default function EditProfileClient({
               <div key={diploma.id} className="p-4 border rounded space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Diploma Name</Label>
+                    <Label>{t('addPerson.diplomaName')}</Label>
                     <Input
                       value={diploma.name}
                       onChange={(e) => updateDiploma(diploma.id, 'name', e.target.value)}
@@ -720,7 +784,7 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Issuer</Label>
+                    <Label>{t('addPerson.issuer')}</Label>
                     <Input
                       value={diploma.issuer || ''}
                       onChange={(e) => updateDiploma(diploma.id, 'issuer', e.target.value)}
@@ -728,7 +792,7 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Issue Date</Label>
+                    <Label>{t('addPerson.issueDate')}</Label>
                     <Input
                       type="date"
                       value={formatDateForInput(diploma.issueDate)}
@@ -736,7 +800,7 @@ export default function EditProfileClient({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Expiry Date (optional)</Label>
+                    <Label>{t('addPerson.expiryDate')}</Label>
                     <Input
                       type="date"
                       value={formatDateForInput(diploma.expiryDate)}
@@ -747,7 +811,7 @@ export default function EditProfileClient({
 
                 {/* Diploma Documents */}
                 <div className="mt-4 space-y-2">
-                  <Label>Documents</Label>
+                  <Label>{t('addPerson.documents')}</Label>
                   {diploma.documents.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded">
                       <span className="text-sm">{doc.name}</span>
@@ -812,9 +876,9 @@ export default function EditProfileClient({
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Soft Skills</CardTitle>
+                <CardTitle>{t('addPerson.softSkills')}</CardTitle>
                 <Button type="button" variant="outline" size="sm" onClick={() => addSkill('soft')}>
-                  <Plus className="h-4 w-4 mr-2" /> Add Skill
+                  <Plus className="h-4 w-4 mr-2" /> {t('skills.addSkill')}
                 </Button>
               </div>
             </CardHeader>
@@ -826,7 +890,7 @@ export default function EditProfileClient({
                   <div key={skill.id} className="p-4 border rounded space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
-                        <Label>Skill</Label>
+                        <Label>{t('common.skill')}</Label>
                         <Input
                           value={skill.name}
                           onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
@@ -834,7 +898,7 @@ export default function EditProfileClient({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Level</Label>
+                        <Label>{t('common.level')}</Label>
                         <Select
                           value={skill.level}
                           onValueChange={(value) => updateSkill(skill.id, 'level', value)}
@@ -868,9 +932,9 @@ export default function EditProfileClient({
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Hard Skills</CardTitle>
+                <CardTitle>{t('addPerson.hardSkills')}</CardTitle>
                 <Button type="button" variant="outline" size="sm" onClick={() => addSkill('hard')}>
-                  <Plus className="h-4 w-4 mr-2" /> Add Skill
+                  <Plus className="h-4 w-4 mr-2" /> {t('skills.addSkill')}
                 </Button>
               </div>
             </CardHeader>
@@ -882,7 +946,7 @@ export default function EditProfileClient({
                   <div key={skill.id} className="p-4 border rounded space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
-                        <Label>Skill</Label>
+                        <Label>{t('common.skill')}</Label>
                         <Input
                           value={skill.name}
                           onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
@@ -890,7 +954,7 @@ export default function EditProfileClient({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Level</Label>
+                        <Label>{t('common.level')}</Label>
                         <Select
                           value={skill.level}
                           onValueChange={(value) => updateSkill(skill.id, 'level', value)}
@@ -921,16 +985,73 @@ export default function EditProfileClient({
           </Card>
         </div>
 
+        {/* General Documents */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('addPerson.documents')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('addPerson.uploadRelatedDocuments')}</Label>
+              {generalDocuments.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                  <span className="text-sm">{doc.name}</span>
+                  <div className="flex gap-2">
+                    {doc.fileUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                      >
+                        <a href={`/api/documents/${doc.fileUrl}`} download>
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeGeneralDocument(doc.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <input
+                type="file"
+                id="general-doc-upload"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={addGeneralDocument}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('general-doc-upload')?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" /> Add Document
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Observations */}
         <Card>
           <CardHeader>
-            <CardTitle>Observations</CardTitle>
+            <CardTitle>{t('addPerson.observations')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
               value={formData.observations}
               onChange={(e) => setFormData({...formData, observations: e.target.value})}
-              placeholder="Add observations..."
+              placeholder={t('addPerson.observationsPlaceholder')}
               className="min-h-[100px]"
             />
           </CardContent>

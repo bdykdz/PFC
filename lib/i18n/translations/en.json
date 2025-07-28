@@ -8,7 +8,12 @@
     "add": "Add",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "description": "Description",
+    "optional": "optional",
+    "skill": "Skill",
+    "level": "Level",
+    "uploadDocument": "Upload Document"
   },
   "navigation": {
     "people": "People Directory",
@@ -77,7 +82,12 @@
     "endDate": "End Date",
     "skillName": "Skill name",
     "level": "Level",
-    "selectLevel": "Select level"
+    "selectLevel": "Select level",
+    "skill": "Skill",
+    "skillNamePlaceholder": "Enter skill name",
+    "acceptTerms": "I entered all the required data.",
+    "addPerson": "Add Person",
+    "addingPerson": "Adding Person"
   },
   "auth": {
     "welcomeTitle": "Welcome to People Finder",
@@ -97,11 +107,13 @@
     "addDiploma": "Add Diploma",
     "addDocument": "Add Document",
     "contractName": "Contract name",
+    "contractNamePlaceholder": "Enter contract name",
     "description": "Description",
     "location": "Location",
     "beneficiary": "Beneficiary",
     "position": "Position",
     "contractNumber": "Contract number",
+    "contractNumberPlaceholder": "Enter contract number",
     "diplomaName": "Diploma name",
     "issuer": "Issuer",
     "issueDate": "Issue date",
@@ -110,6 +122,7 @@
     "company": "Company",
     "department": "Department",
     "expertise": "Expertise",
+    "expertisePlaceholder": "Describe expertise...",
     "observationsPlaceholder": "Add observations (e.g., Advanced Excel, Travel availability, Relocation availability)",
     "termsAccepted": "I entered all the required data.",
     "addingPerson": "Adding Person...",
@@ -120,7 +133,8 @@
     "deleteSkill": "Delete Skill",
     "uploadDocuments": "Upload contract documents",
     "documentUploadLabel": "Upload related documents for this person",
-    "documentName": "Document name"
+    "documentName": "Document name",
+    "uploadRelatedDocuments": "Upload related documents for this person"
   },
   "admin": {
     "importTitle": "Import Users from Azure AD",
@@ -332,6 +346,9 @@
     "enterValue": "Enter value...",
     "enterNameOrEmail": "Enter name or email...",
     "enterSkills": "e.g., React, Management...",
+    "enterSkillsCommaSeparated": "Enter skills separated by commas",
+    "separateWithCommas": "Separate multiple values with commas",
+    "numberOfActiveContracts": "Number of active contracts",
     "noSavedSearches": "No saved searches yet. Create and save a search from the Query Builder.",
     "conditions": "conditions",
     "load": "Load",
@@ -340,6 +357,10 @@
     "tryAdjustingQuery": "Try adjusting your query conditions",
     "contracts": "contracts",
     "active": "active",
-    "enterSearchName": "Enter a name for this search:"
+    "enterSearchName": "Enter a name for this search:",
+    "searchSaved": "Search saved successfully",
+    "searchDeleted": "Search deleted successfully",
+    "failedToSaveSearch": "Failed to save search",
+    "failedToDeleteSearch": "Failed to delete search"
   }
 }

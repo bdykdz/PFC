@@ -45,15 +45,83 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    // Get custom dropdown values from audit log
+    const customValueLogs = await prisma.auditLog.findMany({
+      where: {
+        OR: [
+          {
+            action: 'DROPDOWN_VALUE_ADDED',
+            resource_type: 'dropdown'
+          },
+          {
+            action: 'DROPDOWN_VALUE_DELETED',
+            resource_type: 'dropdown'
+          }
+        ]
+      },
+      select: {
+        action: true,
+        resource_id: true,
+        changes: true
+      },
+      orderBy: {
+        created_at: 'asc'
+      }
+    })
+
+    // Track active custom values by type
+    const customValuesByType: Record<string, Set<string>> = {}
+    
+    customValueLogs.forEach(log => {
+      const type = log.resource_id
+      const changes = log.changes as any
+      if (type && changes?.value) {
+        if (!customValuesByType[type]) {
+          customValuesByType[type] = new Set()
+        }
+        
+        if (log.action === 'DROPDOWN_VALUE_ADDED') {
+          customValuesByType[type].add(changes.value)
+        } else if (log.action === 'DROPDOWN_VALUE_DELETED') {
+          customValuesByType[type].delete(changes.value)
+        }
+      }
+    })
+
+    // Merge dynamic and custom values
     const result = {
-      departments: departments.map(d => d.department).filter(Boolean).sort(),
-      companies: companies.map(c => c.company).filter(Boolean).sort(),
-      positions: Array.from(new Set(contracts.map(c => c.position).filter(Boolean))).sort(),
-      locations: Array.from(new Set(contracts.map(c => c.location).filter(Boolean))).sort(),
-      beneficiaries: Array.from(new Set(contracts.map(c => c.beneficiary).filter(Boolean))).sort(),
-      skill_names: Array.from(new Set(skills.map(s => s.name))).sort(),
-      diploma_names: Array.from(new Set(diplomas.map(d => d.name))).sort(),
-      diploma_issuers: Array.from(new Set(diplomas.map(d => d.issuer))).sort(),
+      departments: Array.from(new Set([
+        ...departments.map(d => d.department).filter(Boolean),
+        ...(customValuesByType.departments || new Set())
+      ])).sort(),
+      companies: Array.from(new Set([
+        ...companies.map(c => c.company).filter(Boolean),
+        ...(customValuesByType.companies || new Set())
+      ])).sort(),
+      positions: Array.from(new Set([
+        ...contracts.map(c => c.position).filter(Boolean),
+        ...(customValuesByType.positions || new Set())
+      ])).sort(),
+      locations: Array.from(new Set([
+        ...contracts.map(c => c.location).filter(Boolean),
+        ...(customValuesByType.locations || new Set())
+      ])).sort(),
+      beneficiaries: Array.from(new Set([
+        ...contracts.map(c => c.beneficiary).filter(Boolean),
+        ...(customValuesByType.beneficiaries || new Set())
+      ])).sort(),
+      skill_names: Array.from(new Set([
+        ...skills.map(s => s.name),
+        ...(customValuesByType.skill_names || new Set())
+      ])).sort(),
+      diploma_names: Array.from(new Set([
+        ...diplomas.map(d => d.name),
+        ...(customValuesByType.diploma_names || new Set())
+      ])).sort(),
+      diploma_issuers: Array.from(new Set([
+        ...diplomas.map(d => d.issuer),
+        ...(customValuesByType.diploma_issuers || new Set())
+      ])).sort(),
     }
 
     return NextResponse.json(result)
@@ -101,23 +169,32 @@ export async function POST(request: NextRequest) {
 }
 
 async function addDropdownValue(type: string, value: string, userId: string | undefined) {
-  // For now, we'll just log this action. In a real implementation, you might
-  // want to maintain separate tables for dropdown options or update existing records
+  // Since dropdown values are extracted dynamically from existing data,
+  // we need to create placeholder records to make new values available
   
-  await logActivity({
-    userId: userId || null,
-    action: 'dropdown.added' as any,
-    resourceType: 'system',
-    changes: {
-      type,
-      value,
-      action: 'add'
-    }
-  })
-
-  // Since we don't have separate dropdown tables, we'll just return success
-  // The actual values are pulled dynamically from the existing data
-  return true
+  try {
+    // For all types, we store in audit log as custom dropdown values
+    // These will be retrieved separately and merged with dynamic values
+    await prisma.auditLog.create({
+      data: {
+        user_id: userId || null,
+        action: 'DROPDOWN_VALUE_ADDED',
+        resource_type: 'dropdown',
+        resource_id: type,
+        changes: {
+          type,
+          value,
+          action: 'add',
+          isCustomValue: true
+        }
+      }
+    })
+    
+    return true
+  } catch (error) {
+    console.error('Error adding dropdown value:', error)
+    throw error
+  }
 }
 
 async function updateDropdownValue(type: string, oldValue: string, newValue: string, userId: string | undefined) {
@@ -189,6 +266,22 @@ async function updateDropdownValue(type: string, oldValue: string, newValue: str
 }
 
 async function deleteDropdownValue(type: string, value: string, userId: string | undefined) {
+  // First, mark any custom values as deleted
+  await prisma.auditLog.create({
+    data: {
+      user_id: userId || null,
+      action: 'DROPDOWN_VALUE_DELETED',
+      resource_type: 'dropdown',
+      resource_id: type,
+      changes: {
+        type,
+        value,
+        action: 'delete',
+        isCustomValue: true
+      }
+    }
+  })
+  
   // For delete, we'll set the value to null rather than actually deleting records
   // This preserves data integrity
   

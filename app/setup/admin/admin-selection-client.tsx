@@ -32,8 +32,11 @@ export default function AdminSelectionClient() {
     console.log('Stored users from sessionStorage:', storedUsers)
     
     if (!storedUsers) {
+      console.error('No users in sessionStorage')
       toast.error('No users selected. Please go back and select users.')
-      router.push('/setup')
+      setTimeout(() => {
+        router.push('/setup')
+      }, 100)
       return
     }
 
@@ -69,17 +72,20 @@ export default function AdminSelectionClient() {
     setIsImporting(true)
 
     try {
-      // Prepare users data with correct structure
-      const usersToImport = selectedUsers.map(user => ({
-        azureId: user.id,
-        email: user.email,
-        name: user.name,
-        jobTitle: user.jobTitle,
-        department: user.department,
-        role: user.id === adminUserId ? 'admin' : 'viewer'
-      }))
+      // Get all Azure users from sessionStorage
+      const allUsersStr = sessionStorage.getItem('allAzureUsers')
+      if (!allUsersStr) {
+        throw new Error('Azure users data not found')
+      }
+      
+      const allAzureUsers = JSON.parse(allUsersStr)
+      const selectedUserIds = selectedUsers.map(user => user.id)
 
-      console.log('Users to import:', usersToImport)
+      console.log('Sending to API:', {
+        allAzureUsers: allAzureUsers.length,
+        selectedUserIds: selectedUserIds.length,
+        adminUserId
+      })
 
       const response = await fetch('/api/setup/import-users', {
         method: 'POST',
@@ -87,8 +93,9 @@ export default function AdminSelectionClient() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          users: usersToImport,
-          totalAzureUsers: totalAzureUsers
+          allAzureUsers: allAzureUsers,
+          selectedUserIds: selectedUserIds,
+          adminUserId: adminUserId
         }),
       })
 

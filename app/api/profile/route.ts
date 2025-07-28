@@ -2,38 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
-import { logActivity } from '@/lib/activity-logger'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user data
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        last_login: true,
-        created_at: true,
-        updated_at: true,
-      }
+      where: { id: session.user.id }
     })
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Try to find linked employee profile
+    // Check if user has linked employee profile
     const employee = await prisma.employee.findFirst({
-      where: { 
-        email: user.email 
+      where: {
+        OR: [
+          { email: user.email },
+          { azure_id: user.azure_id }
+        ]
       },
       select: {
         id: true,
@@ -47,44 +38,42 @@ export async function GET(request: NextRequest) {
             contracts: true,
             skills: true,
             diplomas: true,
-            documents: true,
+            documents: true
           }
         }
       }
     })
 
-    // Get activity stats if user has performed actions
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    // Get activity stats
+    const activityStats = await prisma.auditLog.aggregate({
+      where: { user_id: user.id },
+      _count: true
+    })
 
-    const [totalActions, recentActions, lastAction] = await Promise.all([
-      prisma.auditLog.count({
-        where: { user_id: user.id }
-      }),
-      prisma.auditLog.count({
-        where: { 
-          user_id: user.id,
-          created_at: { gte: thirtyDaysAgo }
+    const recentActions = await prisma.auditLog.count({
+      where: {
+        user_id: user.id,
+        created_at: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30))
         }
-      }),
-      prisma.auditLog.findFirst({
-        where: { user_id: user.id },
-        orderBy: { created_at: 'desc' },
-        select: { created_at: true }
-      })
-    ])
+      }
+    })
 
-    const profile = {
+    const lastAction = await prisma.auditLog.findFirst({
+      where: { user_id: user.id },
+      orderBy: { created_at: 'desc' },
+      select: { created_at: true }
+    })
+
+    return NextResponse.json({
       ...user,
-      employee: employee || undefined,
+      employee: employee,
       activityStats: {
-        totalActions,
+        totalActions: activityStats._count,
         recentActions,
         lastAction: lastAction?.created_at || null
       }
-    }
-
-    return NextResponse.json(profile)
+    })
   } catch (error) {
     console.error('Error fetching profile:', error)
     return NextResponse.json(
@@ -97,52 +86,29 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { name } = body
 
-    if (!name || typeof name !== 'string' || !name.trim()) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
 
-    // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: { 
-        name: name.trim(),
-        updated_at: new Date()
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        last_login: true,
-        created_at: true,
-        updated_at: true,
-      }
+      data: { name: name.trim() }
     })
 
-    // Log the profile update
-    await logActivity({
-      userId: session.user.id,
-      action: 'profile.updated' as any,
-      resourceType: 'user',
-      resourceId: session.user.id,
-      changes: {
-        oldName: session.user.name,
-        newName: name.trim()
-      }
-    })
-
-    // Get linked employee profile if exists
+    // Check if user has linked employee profile
     const employee = await prisma.employee.findFirst({
-      where: { 
-        email: updatedUser.email 
+      where: {
+        OR: [
+          { email: updatedUser.email },
+          { azure_id: updatedUser.azure_id }
+        ]
       },
       select: {
         id: true,
@@ -156,44 +122,53 @@ export async function PATCH(request: NextRequest) {
             contracts: true,
             skills: true,
             diplomas: true,
-            documents: true,
+            documents: true
           }
         }
       }
     })
 
-    // Get activity stats
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        user_id: session.user.id,
+        action: 'UPDATE',
+        resource_type: 'profile',
+        resource_id: session.user.id,
+        changes: { name: name.trim() }
+      }
+    })
 
-    const [totalActions, recentActions, lastAction] = await Promise.all([
-      prisma.auditLog.count({
-        where: { user_id: updatedUser.id }
-      }),
-      prisma.auditLog.count({
-        where: { 
-          user_id: updatedUser.id,
-          created_at: { gte: thirtyDaysAgo }
+    // Get updated activity stats
+    const activityStats = await prisma.auditLog.aggregate({
+      where: { user_id: updatedUser.id },
+      _count: true
+    })
+
+    const recentActions = await prisma.auditLog.count({
+      where: {
+        user_id: updatedUser.id,
+        created_at: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30))
         }
-      }),
-      prisma.auditLog.findFirst({
-        where: { user_id: updatedUser.id },
-        orderBy: { created_at: 'desc' },
-        select: { created_at: true }
-      })
-    ])
+      }
+    })
 
-    const profile = {
+    const lastAction = await prisma.auditLog.findFirst({
+      where: { user_id: updatedUser.id },
+      orderBy: { created_at: 'desc' },
+      select: { created_at: true }
+    })
+
+    return NextResponse.json({
       ...updatedUser,
-      employee: employee || undefined,
+      employee: employee,
       activityStats: {
-        totalActions,
+        totalActions: activityStats._count,
         recentActions,
         lastAction: lastAction?.created_at || null
       }
-    }
-
-    return NextResponse.json(profile)
+    })
   } catch (error) {
     console.error('Error updating profile:', error)
     return NextResponse.json(

@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/components/ui/use-toast'
 import {
   Search,
   Building,
@@ -115,6 +116,7 @@ interface FilterOptions {
 export default function AdvancedSearchV3() {
   const router = useRouter()
   const { t } = useI18n()
+  const { toast } = useToast()
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -247,9 +249,10 @@ export default function AdvancedSearchV3() {
     return operatorMap[field] || []
   }
 
-  // Load filter options
+  // Load filter options and saved searches
   useEffect(() => {
     loadFilterOptions()
+    loadSavedSearches()
   }, [])
 
   const loadFilterOptions = async () => {
@@ -261,6 +264,18 @@ export default function AdvancedSearchV3() {
       }
     } catch (error) {
       console.error('Error loading filter options:', error)
+    }
+  }
+
+  const loadSavedSearches = async () => {
+    try {
+      const response = await fetch('/api/saved-searches')
+      if (response.ok) {
+        const data = await response.json()
+        setSavedSearches(data)
+      }
+    } catch (error) {
+      console.error('Error loading saved searches:', error)
     }
   }
 
@@ -282,9 +297,37 @@ export default function AdvancedSearchV3() {
   }
 
   const updateQuery = (id: string, updates: Partial<QueryCondition>) => {
-    setQueries(queries.map(q => 
-      q.id === id ? { ...q, ...updates } : q
-    ))
+    setQueries(queries.map(q => {
+      if (q.id !== id) return q
+      
+      const updated = { ...q, ...updates }
+      
+      // Initialize value based on operator change
+      if (updates.operator && updates.value === undefined) {
+        if (['in', 'has_any', 'has_all'].includes(updates.operator)) {
+          updated.value = []
+        } else if (['between'].includes(updates.operator)) {
+          updated.value = '-'
+        } else if (['has', 'no'].includes(updates.operator)) {
+          updated.value = ''
+        } else {
+          updated.value = ''
+        }
+      }
+      
+      // Initialize value based on field change
+      if (updates.field && updates.value === undefined) {
+        const operators = getOperatorOptions(updates.field)
+        const defaultOperator = operators[0]?.value || 'contains'
+        if (['in', 'has_any', 'has_all'].includes(defaultOperator)) {
+          updated.value = []
+        } else {
+          updated.value = ''
+        }
+      }
+      
+      return updated
+    }))
   }
 
   const handleSearch = async () => {
@@ -309,25 +352,79 @@ export default function AdvancedSearchV3() {
     }
   }
 
-  const saveSearch = () => {
+  const saveSearch = async () => {
     const name = prompt(t('search.enterSearchName'))
     if (name) {
-      const newSavedSearch = {
-        id: Date.now().toString(),
-        name,
-        queries: [...queries]
+      try {
+        const response = await fetch('/api/saved-searches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            queries: [...queries]
+          })
+        })
+        
+        if (response.ok) {
+          const savedSearch = await response.json()
+          setSavedSearches([savedSearch, ...savedSearches])
+          toast({
+            title: t('common.success'),
+            description: t('search.searchSaved')
+          })
+        } else {
+          console.error('Failed to save search')
+          toast({
+            title: t('common.error'),
+            description: t('search.failedToSaveSearch'),
+            variant: 'destructive'
+          })
+        }
+      } catch (error) {
+        console.error('Error saving search:', error)
+        toast({
+          title: t('common.error'),
+          description: 'Failed to save search',
+          variant: 'destructive'
+        })
       }
-      setSavedSearches([...savedSearches, newSavedSearch])
-      // In a real app, you'd save this to the backend
     }
   }
 
   const loadSavedSearch = (search: typeof savedSearches[0]) => {
-    setQueries([...search.queries])
+    // Ensure queries is an array
+    const queries = Array.isArray(search.queries) ? search.queries : (search.queries as any)
+    setQueries([...queries])
   }
 
-  const deleteSavedSearch = (searchId: string) => {
-    setSavedSearches(savedSearches.filter(search => search.id !== searchId))
+  const deleteSavedSearch = async (searchId: string) => {
+    try {
+      const response = await fetch(`/api/saved-searches?id=${searchId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setSavedSearches(savedSearches.filter(search => search.id !== searchId))
+        toast({
+          title: t('common.success'),
+          description: t('search.searchDeleted')
+        })
+      } else {
+        console.error('Failed to delete search')
+        toast({
+          title: t('common.error'),
+          description: t('search.failedToDeleteSearch'),
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting search:', error)
+      toast({
+        title: t('common.error'),
+        description: 'Failed to delete search',
+        variant: 'destructive'
+      })
+    }
   }
 
   const renderQueryValue = (query: QueryCondition) => {
@@ -337,13 +434,35 @@ export default function AdvancedSearchV3() {
     // Multi-select fields
     if (['in', 'has_any', 'has_all'].includes(operator)) {
       const options = getOptionsForField(field)
+      const currentValue = Array.isArray(query.value) ? query.value : []
+      
+      // For skills, use a multi-select component
+      if (field === 'skills') {
+        return (
+          <div className="flex-1">
+            <Input
+              placeholder={t('search.enterSkillsCommaSeparated')}
+              value={currentValue.join(', ')}
+              onChange={(e) => {
+                const values = e.target.value.split(',').map(v => v.trim()).filter(v => v)
+                updateQuery(query.id, { value: values })
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('search.separateWithCommas')}
+            </p>
+          </div>
+        )
+      }
+      
+      // For other fields, use standard select
       return (
         <Select
-          value={(query.value as string[]).join(',')}
-          onValueChange={(value) => updateQuery(query.id, { value: value.split(',') })}
+          value={currentValue.length > 0 ? currentValue[0] : ''}
+          onValueChange={(value) => updateQuery(query.id, { value: value ? [value] : [] })}
         >
           <SelectTrigger className="flex-1">
-            <SelectValue placeholder={t('search.selectMultiple')} />
+            <SelectValue placeholder={t('search.select')} />
           </SelectTrigger>
           <SelectContent>
             {options.map(opt => (
@@ -380,7 +499,8 @@ export default function AdvancedSearchV3() {
 
     // Number range fields
     if (operator === 'between') {
-      const [min, max] = (query.value as string).split('-')
+      const valueStr = String(query.value || '-')
+      const [min, max] = valueStr.split('-')
       return (
         <div className="flex gap-2 flex-1">
           <Input
@@ -410,7 +530,8 @@ export default function AdvancedSearchV3() {
 
     // Date range fields
     if (field === 'contract_date') {
-      const [start, end] = (query.value as string).split('-')
+      const valueStr = String(query.value || '-')
+      const [start, end] = valueStr.split('-')
       return (
         <div className="flex gap-2 flex-1">
           <Input
@@ -437,6 +558,20 @@ export default function AdvancedSearchV3() {
     // Boolean fields
     if (['has', 'no'].includes(operator)) {
       return null // No value input needed
+    }
+
+    // Special case for active_contracts with count operator
+    if (field === 'active_contracts' && operator === 'count') {
+      return (
+        <Input
+          type="number"
+          placeholder={t('search.numberOfActiveContracts')}
+          value={query.value as string}
+          onChange={(e) => updateQuery(query.id, { value: e.target.value })}
+          className="flex-1"
+          min="0"
+        />
+      )
     }
 
     // Default text/number input

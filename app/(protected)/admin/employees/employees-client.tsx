@@ -256,7 +256,7 @@ export function EmployeesClient() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(`/employee/${employee.id}`, '_blank')}
+                      onClick={() => window.open(`/profile/${employee.id}`, '_blank')}
                     >
                       <Eye className="h-3 w-3 mr-1" />
                       {t('search.viewProfile')}

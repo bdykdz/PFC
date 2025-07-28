@@ -48,6 +48,11 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
             { type: 'asc' },
             { name: 'asc' }
           ]
+        },
+        documents: {
+          orderBy: {
+            uploaded_at: 'desc'
+          }
         }
       }
     })
@@ -111,6 +116,13 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
       type: skill.type as 'soft' | 'hard'
     }))
 
+    const documents = employee.documents.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      fileUrl: doc.file_url,
+      uploadedAt: doc.uploaded_at
+    }))
+
     return (
       <EditProfileClient
         userId={id}
@@ -118,6 +130,7 @@ export default async function EditProfilePage({ params }: { params: Promise<{ id
         initialContracts={contracts}
         initialDiplomas={diplomas}
         initialSkills={skills}
+        initialDocuments={documents}
       />
     )
   } catch (error) {
