@@ -81,3 +81,12 @@ Thumbs.db
 # Temporary files
 /tmp/
 /temp/
+
+# Deployment scripts (local only)
+hetzner-*.sh
+fix-*.sh
+test-*.sh
+auto-*.sh
+apply-*.sh
+check-*.sh
+commit-*.sh
