@@ -6,7 +6,7 @@ import { uploadToMinio, deleteFromMinio } from '@/lib/minio'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,7 +14,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const employeeId = params.id
+    const resolvedParams = await params
+    const employeeId = resolvedParams.id
     console.log('Updating employee:', employeeId)
     
     const formData = await request.formData()

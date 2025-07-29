@@ -7,7 +7,7 @@ const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'people-finder'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,8 +15,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const resolvedParams = await params
     // Reconstruct the file path from the segments
-    const filePath = params.path.join('/')
+    const filePath = resolvedParams.path.join('/')
     console.log('Direct download requested for:', filePath)
 
     // Get the file from MinIO
