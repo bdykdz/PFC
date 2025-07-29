@@ -81,6 +81,28 @@ export async function uploadToMinio(file: File, path: string): Promise<string> {
   }
 }
 
+// Upload buffer to MinIO (for document processing)
+export async function uploadBufferToMinio(buffer: Buffer, fileName: string, contentType: string): Promise<string> {
+  try {
+    await ensureBucket()
+    
+    await minioClient.putObject(
+      BUCKET_NAME,
+      fileName,
+      buffer,
+      buffer.length,
+      {
+        'Content-Type': contentType,
+      }
+    )
+    
+    return fileName
+  } catch (error) {
+    console.error('Error uploading buffer to MinIO:', error)
+    throw error
+  }
+}
+
 // Delete file from MinIO
 export async function deleteFromMinio(filePath: string): Promise<void> {
   try {

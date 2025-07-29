@@ -252,13 +252,19 @@ export async function PUT(
             name: generalDocsData[docIndex].name || file.name,
             file_url: fileUrl,
             employee_id: employeeId,
+            file_type: file.type || 'application/octet-stream',
+            file_size: file.size,
           })
         }
         docIndex++
       }
 
       if (generalDocs.length > 0) {
-        await tx.document.createMany({ data: generalDocs })
+        // Create documents one by one to get their IDs
+        for (const doc of generalDocs) {
+          const createdDoc = await tx.document.create({ data: doc })
+          // Document will be processed automatically if needed
+        }
       }
 
       // Create audit log
@@ -281,6 +287,8 @@ export async function PUT(
 
       return updatedEmployee
     })
+
+    // OpenSearch indexing removed - will be handled separately to avoid browser bundling issues
 
     return NextResponse.json({
       success: true,

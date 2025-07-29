@@ -114,7 +114,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
         id: doc.id,
         name: doc.name,
         fileUrl: doc.file_url,
-        uploadedAt: doc.uploaded_at
+        uploadedAt: doc.uploaded_at,
+        processedAt: doc.processed_at,
+        ocrProcessed: doc.ocr_processed,
+        fileType: doc.file_type
       }))
 
       return (

@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, Users, UserPlus, Settings, LogOut, Shield, Activity, Database, UserMinus } from 'lucide-react'
+import { Search, Users, UserPlus, Settings, LogOut, Shield, Activity, Database, UserMinus, FileSearch } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
@@ -51,6 +51,13 @@ export default async function ProtectedLayout({
                 >
                   <Search className="h-4 w-4" />
                   <span>Search</span>
+                </Link>
+                <Link
+                  href="/document-search"
+                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <FileSearch className="h-4 w-4" />
+                  <span>Document Search</span>
                 </Link>
                 {session.user.role === 'admin' && (
                   <>

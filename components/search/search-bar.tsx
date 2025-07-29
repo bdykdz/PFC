@@ -10,7 +10,6 @@ export function SearchBar() {
 
   const handleSearch = () => {
     // TODO: Implement search functionality
-    console.log('Searching for:', searchTerm)
   }
 
   return (

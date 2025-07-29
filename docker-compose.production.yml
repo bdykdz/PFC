@@ -1,35 +1,30 @@
-# Docker Compose for local development with app included
+# Docker Compose for production deployment
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: people-finder-dev-postgres
+    container_name: people-finder-postgres
     environment:
-      POSTGRES_DB: peoplefinder
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-peoplefinder}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - people-finder
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 30s
       timeout: 10s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    container_name: people-finder-dev-minio
+    container_name: people-finder-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9010:9000"
-      - "9011:9001"
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     networks:
@@ -43,11 +38,11 @@ services:
 
   opensearch:
     image: opensearchproject/opensearch:2.11.0
-    container_name: people-finder-dev-opensearch
+    container_name: people-finder-opensearch
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
       - DISABLE_SECURITY_PLUGIN=true
       - DISABLE_INSTALL_DEMO_CONFIG=true
     ulimits:
@@ -56,9 +51,6 @@ services:
         hard: -1
     volumes:
       - opensearch_data:/usr/share/opensearch/data
-    ports:
-      - "9200:9200"
-      - "9600:9600"
     networks:
       - people-finder
     restart: unless-stopped
@@ -69,26 +61,23 @@ services:
       retries: 5
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: people-finder-dev-app
-    working_dir: /app
+    image: ${DOCKER_IMAGE:-people-finder:latest}
+    container_name: people-finder-app
     env_file:
       - .env
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/peoplefinder?schema=public
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
       MINIO_ENDPOINT: minio
       MINIO_PORT: "9000"
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      MINIO_BUCKET_NAME: people-finder
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-people-finder}
       MINIO_USE_SSL: "false"
       OPENSEARCH_URL: http://opensearch:9200
-      OPENSEARCH_INDEX_PREFIX: people_finder
+      OPENSEARCH_INDEX_PREFIX: ${OPENSEARCH_INDEX_PREFIX:-people_finder}
     ports:
-      - "3010:3000"
+      - "${PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,26 +88,17 @@ services:
     networks:
       - people-finder
     restart: unless-stopped
-    volumes:
-      # Mount entire project for development
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-    command: sh -c "npm install && npm run dev"
 
   document-processor:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: people-finder-dev-document-processor
-    working_dir: /app
+    image: ${DOCKER_IMAGE:-people-finder:latest}
+    container_name: people-finder-document-processor
     env_file:
       - .env
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/peoplefinder?schema=public
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
       OPENSEARCH_URL: http://opensearch:9200
-      OPENSEARCH_INDEX_PREFIX: people_finder
+      OPENSEARCH_INDEX_PREFIX: ${OPENSEARCH_INDEX_PREFIX:-people_finder}
     depends_on:
       postgres:
         condition: service_healthy
@@ -127,20 +107,17 @@ services:
     networks:
       - people-finder
     restart: unless-stopped
-    volumes:
-      - .:/app
-      - /app/node_modules
     command: node scripts/document-processor-worker.js
 
 volumes:
   postgres_data:
-    name: people_finder_dev_postgres
+    name: people_finder_postgres
   minio_data:
-    name: people_finder_dev_minio
+    name: people_finder_minio
   opensearch_data:
-    name: people_finder_dev_opensearch
+    name: people_finder_opensearch
 
 networks:
   people-finder:
-    name: people-finder-dev
+    name: people-finder
     driver: bridge

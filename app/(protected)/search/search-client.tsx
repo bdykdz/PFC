@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useI18n } from '@/lib/i18n/context'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { UserPlus, Search, Users } from 'lucide-react'
+import { UserPlus, Search, Users, FileSearch } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import EmployeeTable from './employee-table'
 import AdvancedSearchV3 from './advanced-search-v3'
+import { DocumentSearch } from '@/components/document-search'
 
 export function SearchClient() {
   const { t } = useI18n()
@@ -33,10 +34,14 @@ export function SearchClient() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             {t('search.advancedSearch')}
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FileSearch className="h-4 w-4" />
+            Document Search
           </TabsTrigger>
           <TabsTrigger value="browse" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -50,6 +55,10 @@ export function SearchClient() {
 
         <TabsContent value="browse" className="space-y-4">
           <EmployeeTable />
+        </TabsContent>
+
+        <TabsContent value="documents" className="space-y-4">
+          <DocumentSearch />
         </TabsContent>
       </Tabs>
     </div>

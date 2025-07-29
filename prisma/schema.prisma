@@ -144,7 +144,18 @@ model Document {
   employee_id     String
   name            String
   file_url        String
+  file_type       String?   // pdf, docx, jpg, etc.
+  file_size       Int?      // in bytes
+  
+  // Search-related fields
+  extracted_text  String?   @db.Text
+  ocr_processed   Boolean   @default(false)
+  language        String?   // detected language: ro, en, pt, etc.
+  processed_at    DateTime?
+  search_vector   String?   // OpenSearch document ID
+  
   uploaded_at     DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
   
   employee        Employee  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
   

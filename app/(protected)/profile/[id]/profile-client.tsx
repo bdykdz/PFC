@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button'
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ChevronLeft, ChevronRight, Edit, Download, Calendar, MapPin, Building2, User, Phone, Mail, Briefcase, GraduationCap, Brain, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Download, Calendar, MapPin, Building2, User, Phone, Mail, Briefcase, GraduationCap, Brain, FileText, Loader2, FileSearch } from 'lucide-react'
 import { format } from 'date-fns'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -59,6 +59,9 @@ interface Document {
   name: string;
   fileUrl: string;
   uploadedAt: Date;
+  processedAt?: Date | null;
+  ocrProcessed?: boolean;
+  fileType?: string;
 }
 
 interface Experience {
@@ -95,7 +98,7 @@ export default function ProfileClient({
   const [contracts] = useState<Contract[]>(initialContracts)
   const [diplomas] = useState<Diploma[]>(initialDiplomas)
   const [skills] = useState<Skill[]>(initialSkills)
-  const [documents] = useState<Document[]>(initialDocuments)
+  const [documents, setDocuments] = useState<Document[]>(initialDocuments)
   const [experience, setExperience] = useState<Experience>({ general: 0, byPosition: {} })
   const [diplomaPage, setDiplomaPage] = useState(1)
   const [contractPage, setContractPage] = useState(1)
@@ -104,6 +107,23 @@ export default function ProfileClient({
   // Group skills by type
   const softSkills = skills.filter(skill => skill.type === 'Soft')
   const hardSkills = skills.filter(skill => skill.type === 'Hard')
+
+  // Check for unprocessed documents and refresh
+  const checkDocumentStatus = useCallback(async () => {
+    const hasUnprocessedDocs = documents.some(doc => !doc.processedAt && (doc.fileType === 'application/pdf' || doc.fileType?.startsWith('image/')));
+    if (hasUnprocessedDocs) {
+      router.refresh();
+    }
+  }, [documents, router]);
+
+  useEffect(() => {
+    // Poll every 5 seconds if there are unprocessed documents
+    const hasUnprocessedDocs = documents.some(doc => !doc.processedAt && (doc.fileType === 'application/pdf' || doc.fileType?.startsWith('image/')));
+    if (hasUnprocessedDocs) {
+      const interval = setInterval(checkDocumentStatus, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [documents, checkDocumentStatus]);
 
   // Calculate experience whenever contracts or user changes
   useEffect(() => {
@@ -530,24 +550,42 @@ export default function ProfileClient({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {documents.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{doc.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({format(new Date(doc.uploadedAt), 'dd/MM/yyyy')})
-                    </span>
+              {documents.map(doc => {
+                const isProcessing = !doc.processedAt;
+                const isScannedDoc = doc.fileType === 'application/pdf' || doc.fileType?.startsWith('image/');
+                
+                return (
+                  <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{doc.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        ({format(new Date(doc.uploadedAt), 'dd/MM/yyyy')})
+                      </span>
+                      {isProcessing && isScannedDoc && (
+                        <div className="flex items-center gap-1 text-sm text-amber-600">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Processing...</span>
+                        </div>
+                      )}
+                      {doc.processedAt && (
+                        <div className="flex items-center gap-1 text-sm text-green-600">
+                          <FileSearch className="h-3 w-3" />
+                          <span>Searchable</span>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownload(doc.fileUrl)}
+                      disabled={isProcessing}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDownload(doc.fileUrl)}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
