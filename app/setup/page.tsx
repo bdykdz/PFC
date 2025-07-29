@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import SetupClient from './setup-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SetupPage() {
   // Check if any users exist
   const userCount = await prisma.user.count()

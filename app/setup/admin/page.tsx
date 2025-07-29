@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import AdminSelectionClient from './admin-selection-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminSelectionPage() {
   // Check if any users exist
   const userCount = await prisma.user.count()
