@@ -24,6 +24,7 @@ model User {
   updated_employees   Employee[] @relation("EmployeeUpdatedBy")
   audit_logs          AuditLog[]
   saved_searches      SavedSearch[]
+  tender_projects     TenderProject[]
   
   // NextAuth relations
   accounts            Account[]
@@ -47,6 +48,17 @@ model Employee {
   observations        String?    @db.Text
   profile_image_url   String?
   
+  // Tender-specific fields
+  project_categories  Json?      // ["Infrastructure", "IT", "Water", "Construction"]
+  security_clearance  String?    // "Public", "Confidential", "Secret", "Top Secret"
+  availability_status String?    @default("Available") // "Available", "Assigned", "On Leave", "Unavailable"
+  hourly_rate         Decimal?   @db.Decimal(8,2) // For cost estimation
+  languages          Json?      // [{"language": "English", "level": "Native"}, {"language": "Romanian", "level": "Native"}]
+  is_key_expert      Boolean    @default(false) // Flag for top performers/experts
+  years_experience   Int?       // Calculated or manual years of experience
+  location           String?    // Work location/office
+  certifications     Json?      // Professional certifications beyond diplomas
+  
   // Tracking who manages this profile
   created_by_id       String?
   created_by          User?      @relation("EmployeeCreatedBy", fields: [created_by_id], references: [id])
@@ -61,6 +73,7 @@ model Employee {
   diplomas            Diploma[]
   skills              Skill[]
   documents           Document[]
+  tender_teams        TenderTeam[]
   
   @@map("employees")
 }
@@ -189,6 +202,62 @@ model SavedSearch {
   user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   
   @@map("saved_searches")
+}
+
+// Tender Team Builder models
+model TenderProject {
+  id                String          @id @default(uuid())
+  name              String          // "Highway Project 2024", "IT Infrastructure Upgrade"
+  description       String?         @db.Text
+  client            String?         // "Ministry of Transport", "City Council"
+  project_category  String?         // "Infrastructure", "IT", "Construction"
+  submission_date   DateTime?       // When tender is due
+  status            String          @default("Draft") // "Draft", "In Progress", "Submitted", "Won", "Lost"
+  estimated_value   Decimal?        @db.Decimal(12,2) // Project value
+  requirements      Json?           // Technical requirements, certifications needed
+  
+  created_by_id     String
+  created_by        User            @relation(fields: [created_by_id], references: [id])
+  
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+  
+  // Relations
+  teams             TenderTeam[]
+  
+  @@map("tender_projects")
+}
+
+model TenderTeam {
+  id                String          @id @default(uuid())
+  project_id        String
+  name              String          // "Technical Team", "Management Team", "QA Team"
+  description       String?         @db.Text
+  
+  project           TenderProject   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  members           TenderTeamMember[]
+  
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+  
+  @@map("tender_teams")
+}
+
+model TenderTeamMember {
+  id                String          @id @default(uuid())
+  team_id           String
+  employee_id       String
+  role              String          // "Project Manager", "Lead Engineer", "Senior Developer"
+  responsibility    String?         @db.Text // What they'll do in this project
+  allocation        Int?            // % of time allocated (0-100)
+  
+  team              TenderTeam      @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  employee          Employee        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  
+  created_at        DateTime        @default(now())
+  
+  @@unique([team_id, employee_id]) // One person per team per role
+  @@map("tender_team_members")
 }
 
 // NextAuth.js models
