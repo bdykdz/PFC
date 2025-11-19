@@ -39,6 +39,9 @@ docker-compose run --rm app node scripts/init-minio.js           # Initialize Mi
 docker-compose run --rm app node scripts/setup-opensearch-indices.js  # Setup search indices
 docker-compose logs -f app                       # View application logs
 docker-compose logs -f document-processor        # View document processor logs
+
+# Quick deploy with environment fix (Cloudflare)
+export $(cat .env.cloudflare | grep -v '#' | xargs) && docker-compose -f docker-compose.cloudflare.yml up -d --build
 ```
 
 ## Architecture
