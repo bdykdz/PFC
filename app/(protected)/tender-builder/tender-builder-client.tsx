@@ -253,7 +253,7 @@ export function TenderBuilderClient() {
       {currentProject && (
         <ProjectHeader 
           project={currentProject}
-          totalCost={calculateProjectCost()}
+          totalCost={calculateProjectCost}
           onUpdateProject={setCurrentProject}
         />
       )}
