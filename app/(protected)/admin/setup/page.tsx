@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Search, Users, CheckCircle, XCircle } from 'lucide-react'
+import { Loader2, Search, Users, CheckCircle, XCircle, Database } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 
 interface AzureUser {
@@ -42,6 +42,8 @@ export default function AdminSetupPage() {
     failed: number
     errors: { email: string; error: string }[]
   } | null>(null)
+  const [seedingTenderData, setSeedingTenderData] = useState(false)
+  const [seedResults, setSeedResults] = useState<string | null>(null)
 
   useEffect(() => {
     if (session?.user?.role !== 'admin') {
@@ -143,10 +145,72 @@ export default function AdminSetupPage() {
     }
   }
 
+  const seedTenderData = async () => {
+    setSeedingTenderData(true)
+    setSeedResults(null)
+    
+    try {
+      const response = await fetch('/api/admin/seed-tender', { method: 'POST' })
+      const result = await response.json()
+      
+      if (response.ok) {
+        setSeedResults(result.message)
+      } else {
+        setSeedResults('Error: ' + (result.error || 'Failed to seed data'))
+      }
+    } catch (error) {
+      setSeedResults('Error: Failed to connect to server')
+      console.error('Error seeding tender data:', error)
+    } finally {
+      setSeedingTenderData(false)
+    }
+  }
+
   const selectedCount = azureUsers.filter(u => u.selected).length
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Tender Data Setup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Tender Data Setup
+          </CardTitle>
+          <CardDescription>
+            Initialize employee tender-specific data for team building and analytics
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Button 
+              onClick={seedTenderData}
+              disabled={seedingTenderData}
+              className="gap-2"
+            >
+              {seedingTenderData ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Database className="h-4 w-4" />
+              )}
+              {seedingTenderData ? 'Seeding Data...' : 'Seed Tender Data'}
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              Populates project categories, security clearance, availability, hourly rates, and sample project
+            </div>
+          </div>
+
+          {seedResults && (
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                {seedResults}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t('admin.importTitle')}</CardTitle>

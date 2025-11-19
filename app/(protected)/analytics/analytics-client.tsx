@@ -135,22 +135,6 @@ export function AnalyticsDashboard() {
             <Download className="h-4 w-4" />
             Export Report
           </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={async () => {
-              const response = await fetch('/api/admin/seed-tender', { method: 'POST' })
-              const result = await response.json()
-              console.log(result)
-              if (response.ok) {
-                window.location.reload()
-              }
-            }} 
-            className="gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Seed Data
-          </Button>
         </div>
       </div>
 
