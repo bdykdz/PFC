@@ -34,6 +34,7 @@ export interface TenderEmployee {
   isKeyExpert: boolean
   location?: string
   certifications?: Certification[]
+  profileImageUrl?: string
   skills: Array<{
     name: string
     level: string
