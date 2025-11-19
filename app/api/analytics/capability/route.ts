@@ -18,12 +18,6 @@ export async function GET(request: NextRequest) {
 
     // Get all employees with tender data
     const employees = await prisma.employee.findMany({
-      where: category !== 'all' ? {
-        project_categories: {
-          path: '$',
-          array_contains: category
-        }
-      } : {},
       select: {
         id: true,
         project_categories: true,
@@ -44,14 +38,24 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Filter by category if needed (client-side filtering since JSON queries are complex)
+    const filteredEmployees = category !== 'all' 
+      ? employees.filter(emp => {
+          if (Array.isArray(emp.project_categories)) {
+            return emp.project_categories.includes(category)
+          }
+          return false
+        })
+      : employees
+
     // Calculate capability report
-    const totalEmployees = employees.length
-    const availableEmployees = employees.filter(emp => emp.availability_status === 'Available').length
-    const keyExperts = employees.filter(emp => emp.is_key_expert).length
+    const totalEmployees = filteredEmployees.length
+    const availableEmployees = filteredEmployees.filter(emp => emp.availability_status === 'Available').length
+    const keyExperts = filteredEmployees.filter(emp => emp.is_key_expert).length
 
     // Category breakdown
     const categoryStats = new Map<string, number>()
-    employees.forEach(emp => {
+    filteredEmployees.forEach(emp => {
       if (Array.isArray(emp.project_categories)) {
         emp.project_categories.forEach((cat: string) => {
           categoryStats.set(cat, (categoryStats.get(cat) || 0) + 1)
@@ -75,7 +79,7 @@ export async function GET(request: NextRequest) {
     ]
 
     const experienceBreakdown = experienceRanges.map(range => {
-      const count = employees.filter(emp => {
+      const count = filteredEmployees.filter(emp => {
         const years = emp.years_experience || 0
         return years >= range.min && (range.max === 100 ? true : years <= range.max)
       }).length
@@ -88,7 +92,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Average rate calculation
-    const validRates = employees
+    const validRates = filteredEmployees
       .map(emp => emp.hourly_rate ? Number(emp.hourly_rate) : 0)
       .filter(rate => rate > 0)
     const averageRate = validRates.length > 0 
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     // Top skills analysis
     const skillStats = new Map<string, { total: number, expert: number }>()
-    employees.forEach(emp => {
+    filteredEmployees.forEach(emp => {
       emp.skills.forEach(skill => {
         const current = skillStats.get(skill.name) || { total: 0, expert: 0 }
         skillStats.set(skill.name, {
@@ -118,7 +122,7 @@ export async function GET(request: NextRequest) {
 
     // Security clearance breakdown
     const clearanceStats = new Map<string, number>()
-    employees.forEach(emp => {
+    filteredEmployees.forEach(emp => {
       const clearance = emp.security_clearance || 'None'
       clearanceStats.set(clearance, (clearanceStats.get(clearance) || 0) + 1)
     })
