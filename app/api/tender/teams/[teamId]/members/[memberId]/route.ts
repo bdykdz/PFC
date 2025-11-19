@@ -7,7 +7,7 @@ const prisma = new PrismaClient()
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { teamId: string; memberId: string } }
+  context: { params: Promise<{ teamId: string; memberId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,6 +15,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const params = await context.params
+    
     // Remove team member
     await prisma.tenderTeamMember.delete({
       where: {
