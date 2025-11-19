@@ -224,10 +224,10 @@ export function TenderBuilderClient() {
         />
       )}
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Employee Pool (Left Sidebar) */}
-        <div className="xl:col-span-1 space-y-4">
+      {/* Main Content - Three Panel Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 min-h-[800px]">
+        {/* Left Panel: Employee Pool */}
+        <div className="xl:col-span-3 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -272,8 +272,8 @@ export function TenderBuilderClient() {
           </Card>
         </div>
 
-        {/* Team Canvas (Main Area) */}
-        <div className="xl:col-span-3">
+        {/* Center Panel: Team Canvas */}
+        <div className="xl:col-span-6">
           {currentProject ? (
             <TeamCanvas
               project={currentProject}
@@ -282,7 +282,7 @@ export function TenderBuilderClient() {
               onUpdateProject={setCurrentProject}
             />
           ) : (
-            <Card className="border-dashed">
+            <Card className="border-dashed h-full">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Target className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
@@ -293,6 +293,27 @@ export function TenderBuilderClient() {
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Project
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Panel: Team Summary & Export */}
+        <div className="xl:col-span-3 space-y-4">
+          {currentProject ? (
+            <TeamSummaryPanel
+              project={currentProject}
+              totalCost={calculateProjectCost()}
+              selectedTeam={selectedTeam}
+            />
+          ) : (
+            <Card className="border-dashed h-full">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <FileDown className="h-8 w-8 text-muted-foreground mb-3" />
+                <h3 className="font-medium mb-2">Team Summary</h3>
+                <p className="text-sm text-muted-foreground">
+                  Project details and export options will appear here
+                </p>
               </CardContent>
             </Card>
           )}
@@ -423,5 +444,249 @@ function NewProjectDialog({
         </DialogFooter>
       </form>
     </DialogContent>
+  )
+}
+
+// Team Summary Panel Component
+interface TeamSummaryPanelProps {
+  project: TenderProject
+  totalCost: number
+  selectedTeam: string | null
+}
+
+function TeamSummaryPanel({ project, totalCost, selectedTeam }: TeamSummaryPanelProps) {
+  const totalMembers = project.teams.reduce((sum, team) => sum + team.members.length, 0)
+  const selectedTeamData = selectedTeam ? project.teams.find(t => t.id === selectedTeam) : null
+
+  const exportTeamSummary = async () => {
+    try {
+      const response = await fetch(`/api/tender/projects/${project.id}/export`, {
+        method: 'GET',
+      })
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_team_summary.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      }
+    } catch (error) {
+      console.error('Failed to export team summary:', error)
+    }
+  }
+
+  const exportTeamAsJSON = () => {
+    const exportData = {
+      project: {
+        name: project.name,
+        client: project.client,
+        category: project.projectCategory,
+        estimatedValue: project.estimatedValue,
+        submissionDate: project.submissionDate
+      },
+      teams: project.teams.map(team => ({
+        name: team.name,
+        description: team.description,
+        members: team.members.map(member => ({
+          name: member.employee.name,
+          role: member.role,
+          hourlyRate: member.employee.hourlyRate,
+          allocation: member.allocation,
+          experience: member.employee.yearsExperience,
+          skills: member.employee.skills.map(s => s.name)
+        }))
+      })),
+      summary: {
+        totalMembers,
+        totalMonthlyCost: totalCost,
+        averageExperience: Math.round(
+          project.teams.flatMap(t => t.members).reduce((sum, m) => sum + (m.employee.yearsExperience || 0), 0) / 
+          Math.max(1, totalMembers)
+        )
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_team_data.json`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  return (
+    <>
+      {/* Project Summary Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Project Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-primary">{totalMembers}</div>
+              <div className="text-xs text-muted-foreground">Team Members</div>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">€{Math.round(totalCost/1000)}k</div>
+              <div className="text-xs text-muted-foreground">Monthly Cost</div>
+            </div>
+          </div>
+
+          {/* Project Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Team Progress</span>
+              <span>{project.teams.length} teams</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all" 
+                style={{ width: `${Math.min(100, (totalMembers / 10) * 100)}%` }}
+              ></div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {totalMembers < 5 ? 'Building team...' : 
+               totalMembers < 10 ? 'Good progress' : 
+               'Team ready!'}
+            </div>
+          </div>
+
+          {/* Export Options */}
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Export Options</h4>
+            <div className="grid grid-cols-1 gap-2">
+              <Button variant="outline" size="sm" onClick={exportTeamSummary} className="justify-start gap-2">
+                <FileDown className="h-4 w-4" />
+                Export PDF Report
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportTeamAsJSON} className="justify-start gap-2">
+                <Save className="h-4 w-4" />
+                Export Data (JSON)
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Selected Team Details */}
+      {selectedTeamData && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              {selectedTeamData.name}
+              <Badge variant="default" className="text-xs">Selected</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {selectedTeamData.description && (
+              <p className="text-sm text-muted-foreground">{selectedTeamData.description}</p>
+            )}
+            
+            {/* Team Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-2 bg-blue-50 rounded-lg">
+                <div className="text-lg font-bold text-blue-600">{selectedTeamData.members.length}</div>
+                <div className="text-xs text-blue-600">Members</div>
+              </div>
+              <div className="text-center p-2 bg-green-50 rounded-lg">
+                <div className="text-lg font-bold text-green-600">
+                  €{Math.round(selectedTeamData.members.reduce((sum, m) => {
+                    const rate = m.employee.hourlyRate || 0
+                    const allocation = (m.allocation || 100) / 100
+                    return sum + (rate * allocation * 160)
+                  }, 0) / 1000)}k
+                </div>
+                <div className="text-xs text-green-600">Monthly</div>
+              </div>
+            </div>
+
+            {/* Team Member List */}
+            <div className="space-y-2">
+              <h5 className="text-sm font-medium">Team Members</h5>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedTeamData.members.map((member) => (
+                  <div key={member.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium">{member.employee.name}</span>
+                        {member.employee.isKeyExpert && (
+                          <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{member.role}</div>
+                    </div>
+                    {member.allocation && member.allocation !== 100 && (
+                      <Badge variant="outline" className="text-xs">
+                        {member.allocation}%
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cost Breakdown */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Cost Breakdown
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {project.teams.map((team) => {
+            const teamCost = team.members.reduce((sum, member) => {
+              const rate = member.employee.hourlyRate || 0
+              const allocation = (member.allocation || 100) / 100
+              return sum + (rate * allocation * 160)
+            }, 0)
+            
+            return (
+              <div key={team.id} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium">{team.name}</div>
+                  <Badge variant="outline" className="text-xs">
+                    {team.members.length} members
+                  </Badge>
+                </div>
+                <div className="text-sm font-bold">
+                  €{teamCost.toLocaleString()}
+                </div>
+              </div>
+            )
+          })}
+          
+          <Separator />
+          <div className="flex justify-between items-center font-bold">
+            <span>Total Monthly Cost</span>
+            <span className="text-lg text-primary">€{totalCost.toLocaleString()}</span>
+          </div>
+          
+          {project.estimatedValue && (
+            <div className="text-xs text-muted-foreground text-center">
+              {((totalCost * 12) / project.estimatedValue * 100).toFixed(1)}% of project value
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   )
 }
