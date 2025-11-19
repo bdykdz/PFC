@@ -73,7 +73,7 @@ model Employee {
   diplomas            Diploma[]
   skills              Skill[]
   documents           Document[]
-  tender_teams        TenderTeam[]
+  tender_team_members TenderTeamMember[]
   
   @@map("employees")
 }
