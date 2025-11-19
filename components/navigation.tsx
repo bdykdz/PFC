@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Search, FileSearch, Shield, UserPlus, Menu, X } from 'lucide-react'
+import { Search, FileSearch, Shield, UserPlus, Menu, X, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +34,12 @@ export function Navigation({ userRole }: NavigationProps) {
       label: 'Documents',
       icon: FileSearch,
       active: pathname.startsWith('/document-search'),
+    },
+    {
+      href: '/tender-builder',
+      label: 'Team Builder',
+      icon: Users,
+      active: pathname.startsWith('/tender-builder'),
     },
   ]
 
