@@ -34,7 +34,7 @@ import { TenderProject, TenderTeam, TenderEmployee, TenderSearchFilters } from '
 import { EmployeeCard } from './components/employee-card'
 import { TeamCanvas } from './components/team-canvas'
 import { ProjectHeader } from './components/project-header'
-import { EmployeeFilters } from './components/employee-filters'
+import { AdvancedEmployeeFilters } from './components/advanced-employee-filters'
 
 export function TenderBuilderClient() {
   const { t } = useI18n()
@@ -247,10 +247,11 @@ export function TenderBuilderClient() {
                 />
               </div>
 
-              {/* Filters */}
-              <EmployeeFilters
+              {/* Advanced Filters */}
+              <AdvancedEmployeeFilters
                 filters={filters}
                 onFiltersChange={setFilters}
+                employeeCount={filteredEmployees.length}
               />
 
               {/* Employee List */}
