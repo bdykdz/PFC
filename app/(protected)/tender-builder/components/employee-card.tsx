@@ -206,7 +206,7 @@ export function EmployeeCard({
               </div>
 
               {/* Project Categories */}
-              {employee.projectCategories && employee.projectCategories.length > 0 && (
+              {employee.projectCategories && Array.isArray(employee.projectCategories) && employee.projectCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {employee.projectCategories.slice(0, 2).map((category) => (
                     <Badge key={category} variant="secondary" className="text-xs">
@@ -222,7 +222,7 @@ export function EmployeeCard({
               )}
 
               {/* Top Skills */}
-              {employee.skills && employee.skills.length > 0 && (
+              {employee.skills && Array.isArray(employee.skills) && employee.skills.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {employee.skills.slice(0, 2).map((skill) => (
                     <Badge key={skill.name} variant="outline" className="text-xs">
@@ -238,7 +238,7 @@ export function EmployeeCard({
               )}
 
               {/* Languages */}
-              {employee.languages && employee.languages.length > 0 && (
+              {employee.languages && Array.isArray(employee.languages) && employee.languages.length > 0 && (
                 <div className="flex items-center gap-1 mt-2">
                   <Languages className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">

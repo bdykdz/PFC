@@ -162,7 +162,10 @@ export function AnalyticsDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{data.capabilityReport.keyExperts}</div>
               <p className="text-xs text-muted-foreground">
-                {((data.capabilityReport.keyExperts / data.capabilityReport.totalEmployees) * 100).toFixed(1)}% of total
+                {data.capabilityReport.totalEmployees > 0 
+                  ? ((data.capabilityReport.keyExperts / data.capabilityReport.totalEmployees) * 100).toFixed(1)
+                  : '0'
+                }% of total
               </p>
             </CardContent>
           </Card>

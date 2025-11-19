@@ -28,7 +28,9 @@ import {
   Star,
   Shield,
   Clock,
-  MapPin
+  MapPin,
+  AlertCircle,
+  X
 } from 'lucide-react'
 import { TenderProject, TenderTeam, TenderEmployee, TenderSearchFilters } from '@/types/tender'
 import { EmployeeCard } from './components/employee-card'
@@ -46,6 +48,7 @@ export function TenderBuilderClient() {
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load employees and projects
   useEffect(() => {
@@ -59,18 +62,20 @@ export function TenderBuilderClient() {
 
     // Text search
     if (searchQuery) {
+      const query = searchQuery.toLowerCase()
       filtered = filtered.filter(emp => 
-        emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.expertise?.toLowerCase().includes(searchQuery.toLowerCase())
+        emp.name.toLowerCase().includes(query) ||
+        emp.email.toLowerCase().includes(query) ||
+        (emp.department && emp.department.toLowerCase().includes(query)) ||
+        (emp.expertise && emp.expertise.toLowerCase().includes(query))
       )
     }
 
     // Apply filters
     if (filters.projectCategories?.length) {
       filtered = filtered.filter(emp => 
-        emp.projectCategories?.some(cat => filters.projectCategories?.includes(cat))
+        emp.projectCategories && Array.isArray(emp.projectCategories) &&
+        emp.projectCategories.some(cat => filters.projectCategories?.includes(cat))
       )
     }
 
@@ -107,26 +112,42 @@ export function TenderBuilderClient() {
 
   const loadEmployees = async () => {
     try {
+      setError(null)
       const response = await fetch('/api/employees/tender')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const employees = await response.json()
       setAvailableEmployees(employees)
       setFilteredEmployees(employees)
     } catch (error) {
       console.error('Failed to load employees:', error)
+      setError('Failed to load employees. Please try again.')
+      setAvailableEmployees([])
+      setFilteredEmployees([])
     }
   }
 
   const loadProjects = async () => {
     try {
+      setError(null)
       const response = await fetch('/api/tender/projects')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const projects = await response.json()
       // Set first project as current if any exist
-      if (projects.length > 0) {
+      if (projects && projects.length > 0) {
         setCurrentProject(projects[0])
       }
       setLoading(false)
     } catch (error) {
       console.error('Failed to load projects:', error)
+      setError('Failed to load projects. Please try again.')
       setLoading(false)
     }
   }
@@ -190,6 +211,22 @@ export function TenderBuilderClient() {
 
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+          <div className="text-red-700">{error}</div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setError(null)}
+            className="ml-auto h-6 w-6 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
