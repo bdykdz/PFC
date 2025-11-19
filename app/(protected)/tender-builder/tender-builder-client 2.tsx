@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n/context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,9 +28,7 @@ import {
   Star,
   Shield,
   Clock,
-  MapPin,
-  AlertCircle,
-  X
+  MapPin
 } from 'lucide-react'
 import { TenderProject, TenderTeam, TenderEmployee, TenderSearchFilters } from '@/types/tender'
 import { EmployeeCard } from './components/employee-card'
@@ -42,12 +40,12 @@ export function TenderBuilderClient() {
   const { t } = useI18n()
   const [currentProject, setCurrentProject] = useState<TenderProject | null>(null)
   const [availableEmployees, setAvailableEmployees] = useState<TenderEmployee[]>([])
+  const [filteredEmployees, setFilteredEmployees] = useState<TenderEmployee[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<TenderSearchFilters>({})
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   // Load employees and projects
   useEffect(() => {
@@ -55,26 +53,24 @@ export function TenderBuilderClient() {
     loadProjects()
   }, [])
 
-  // Filter employees based on search and filters (memoized for performance)
-  const filteredEmployees = useMemo(() => {
+  // Filter employees based on search and filters
+  useEffect(() => {
     let filtered = availableEmployees
 
     // Text search
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
       filtered = filtered.filter(emp => 
-        emp.name.toLowerCase().includes(query) ||
-        emp.email.toLowerCase().includes(query) ||
-        (emp.department && emp.department.toLowerCase().includes(query)) ||
-        (emp.expertise && emp.expertise.toLowerCase().includes(query))
+        emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.expertise?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
 
     // Apply filters
     if (filters.projectCategories?.length) {
       filtered = filtered.filter(emp => 
-        emp.projectCategories && Array.isArray(emp.projectCategories) &&
-        emp.projectCategories.some(cat => filters.projectCategories?.includes(cat))
+        emp.projectCategories?.some(cat => filters.projectCategories?.includes(cat))
       )
     }
 
@@ -106,45 +102,31 @@ export function TenderBuilderClient() {
       )
     }
 
-    return filtered
+    setFilteredEmployees(filtered)
   }, [availableEmployees, searchQuery, filters])
 
   const loadEmployees = async () => {
     try {
-      setError(null)
       const response = await fetch('/api/employees/tender')
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
       const employees = await response.json()
       setAvailableEmployees(employees)
+      setFilteredEmployees(employees)
     } catch (error) {
       console.error('Failed to load employees:', error)
-      setError('Failed to load employees. Please try again.')
-      setAvailableEmployees([])
     }
   }
 
   const loadProjects = async () => {
     try {
-      setError(null)
       const response = await fetch('/api/tender/projects')
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
       const projects = await response.json()
       // Set first project as current if any exist
-      if (projects && projects.length > 0) {
+      if (projects.length > 0) {
         setCurrentProject(projects[0])
       }
       setLoading(false)
     } catch (error) {
       console.error('Failed to load projects:', error)
-      setError('Failed to load projects. Please try again.')
       setLoading(false)
     }
   }
@@ -183,7 +165,7 @@ export function TenderBuilderClient() {
     }
   }
 
-  const calculateProjectCost = useMemo(() => {
+  const calculateProjectCost = () => {
     if (!currentProject) return 0
     
     return currentProject.teams.reduce((total, team) => {
@@ -193,7 +175,7 @@ export function TenderBuilderClient() {
         return teamTotal + (rate * allocation * 160) // Assuming 160 hours/month
       }, 0)
     }, 0)
-  }, [currentProject])
+  }
 
   if (loading) {
     return (
@@ -208,22 +190,6 @@ export function TenderBuilderClient() {
 
   return (
     <div className="space-y-6">
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <div className="text-red-700">{error}</div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setError(null)}
-            className="ml-auto h-6 w-6 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -338,7 +304,7 @@ export function TenderBuilderClient() {
           {currentProject ? (
             <TeamSummaryPanel
               project={currentProject}
-              totalCost={calculateProjectCost}
+              totalCost={calculateProjectCost()}
               selectedTeam={selectedTeam}
             />
           ) : (
