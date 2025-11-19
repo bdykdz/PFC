@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { useI18n } from '@/lib/i18n/context'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { UserPlus, Search, Users, FileSearch } from 'lucide-react'
+import { UserPlus, Search, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import EmployeeTable from './employee-table'
 import AdvancedSearchV3 from './advanced-search-v3'
-import { DocumentSearch } from '@/components/document-search'
 
 export function SearchClient() {
   const { t } = useI18n()
@@ -16,49 +15,44 @@ export function SearchClient() {
   const [activeTab, setActiveTab] = useState('search')
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">{t('search.title')}</h1>
-          <p className="text-muted-foreground mt-2">
+    <div className="space-y-8">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">{t('search.title')}</h1>
+          <p className="text-muted-foreground">
             {t('search.subtitle')}
           </p>
         </div>
         <Button 
           onClick={() => router.push('/add-person')}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 w-fit"
+          size="default"
         >
           <UserPlus className="h-4 w-4" />
           {t('people.addPerson')}
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full max-w-sm grid-cols-2">
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
-            {t('search.advancedSearch')}
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileSearch className="h-4 w-4" />
-            Document Search
+            <span className="hidden sm:inline">{t('search.advancedSearch')}</span>
+            <span className="sm:hidden">Search</span>
           </TabsTrigger>
           <TabsTrigger value="browse" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            {t('search.browseAll')}
+            <span className="hidden sm:inline">{t('search.browseAll')}</span>
+            <span className="sm:hidden">All</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="search" className="space-y-4">
+        <TabsContent value="search" className="mt-6">
           <AdvancedSearchV3 />
         </TabsContent>
 
-        <TabsContent value="browse" className="space-y-4">
+        <TabsContent value="browse" className="mt-6">
           <EmployeeTable />
-        </TabsContent>
-
-        <TabsContent value="documents" className="space-y-4">
-          <DocumentSearch />
         </TabsContent>
       </Tabs>
     </div>

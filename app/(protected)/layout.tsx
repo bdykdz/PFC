@@ -12,9 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, Users, UserPlus, Settings, LogOut, Shield, Activity, Database, UserMinus, FileSearch } from 'lucide-react'
+import { Users, Settings, LogOut, Shield, Activity, Database, UserMinus } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { Navigation } from '@/components/navigation'
 
 export default async function ProtectedLayout({
   children,
@@ -37,47 +38,14 @@ export default async function ProtectedLayout({
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <div className="flex flex-1 items-center justify-between">
-            <nav className="flex items-center space-x-6">
-              <Link href="/" className="flex items-center space-x-2">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <nav className="flex items-center space-x-8">
+              <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                 <Users className="h-6 w-6" />
                 <span className="font-bold text-xl">People Finder</span>
               </Link>
-              <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
-                <Link
-                  href="/search"
-                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Search</span>
-                </Link>
-                <Link
-                  href="/document-search"
-                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <FileSearch className="h-4 w-4" />
-                  <span>Document Search</span>
-                </Link>
-                {session.user.role === 'admin' && (
-                  <>
-                    <Link
-                      href="/admin/users"
-                      className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <Shield className="h-4 w-4" />
-                      <span>Users</span>
-                    </Link>
-                    <Link
-                      href="/admin/setup"
-                      className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span>Import</span>
-                    </Link>
-                  </>
-                )}
-              </div>
+              <Navigation userRole={session.user.role} />
             </nav>
             <div className="flex items-center space-x-4">
               <LanguageSwitcher />
@@ -152,7 +120,7 @@ export default async function ProtectedLayout({
           </div>
         </div>
       </header>
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
       <Toaster />
