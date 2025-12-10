@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
                 'skills',
                 'bio'
               ],
-              type: 'best_fields',
+              type: 'best_fields' as const,
               fuzziness: 'AUTO'
             }
           }
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
                   'fileName',
                   'employeeName'
                 ],
-                type: 'phrase_prefix',
+                type: 'phrase_prefix' as const,
                 max_expansions: 50
               }
             },
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
       
       results = {
         employees: {
-          total: employeesResponse.body.hits.total.value,
+          total: typeof employeesResponse.body.hits.total === 'object' ? employeesResponse.body.hits.total.value : employeesResponse.body.hits.total,
           hits: employeesResponse.body.hits.hits.map((hit: any) => ({
             ...hit._source,
             _score: hit._score,
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
           }))
         },
         documents: {
-          total: documentsResponse.body.hits.total.value,
+          total: typeof documentsResponse.body.hits.total === 'object' ? documentsResponse.body.hits.total.value : documentsResponse.body.hits.total,
           hits: documentsResponse.body.hits.hits.map((hit: any) => ({
             ...hit._source,
             _score: hit._score,

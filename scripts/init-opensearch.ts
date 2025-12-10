@@ -4,18 +4,18 @@ const LANGUAGE_ANALYZERS = {
   romanian: {
     analyzer: {
       romanian_analyzer: {
-        type: 'custom',
+        type: 'custom' as const,
         tokenizer: 'standard',
         filter: ['lowercase', 'romanian_stop', 'romanian_stemmer', 'asciifolding']
       }
     },
     filter: {
       romanian_stop: {
-        type: 'stop',
+        type: 'stop' as const,
         stopwords: '_romanian_'
       },
       romanian_stemmer: {
-        type: 'stemmer',
+        type: 'stemmer' as const,
         language: 'romanian'
       }
     }
@@ -23,18 +23,18 @@ const LANGUAGE_ANALYZERS = {
   english: {
     analyzer: {
       english_analyzer: {
-        type: 'custom',
+        type: 'custom' as const,
         tokenizer: 'standard',
         filter: ['lowercase', 'english_stop', 'english_stemmer', 'asciifolding']
       }
     },
     filter: {
       english_stop: {
-        type: 'stop',
+        type: 'stop' as const,
         stopwords: '_english_'
       },
       english_stemmer: {
-        type: 'stemmer',
+        type: 'stemmer' as const,
         language: 'english'
       }
     }
@@ -42,7 +42,7 @@ const LANGUAGE_ANALYZERS = {
   multilingual: {
     analyzer: {
       multilingual_analyzer: {
-        type: 'custom',
+        type: 'custom' as const,
         tokenizer: 'standard',
         filter: ['lowercase', 'asciifolding']
       }
